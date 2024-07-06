@@ -10,12 +10,13 @@ namespace seneca
 
     // Determine the type of filesystem resource
     enum class NodeType {
-        DIR,
-        FILE
+        DIR,   // Directory
+        FILE   // Regular File
     };
 
+    // Options for performing a filesystem operation
     enum class OpFlags {
-        RECURSIVE,
+        RECURSIVE,  // Options for performing a filesystem operation
     };
 }
 
