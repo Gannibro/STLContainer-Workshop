@@ -1,9 +1,19 @@
 #include <iostream>
 #include <iomanip>
+#include <exception>
+#include <string>
+#include <type_traits>
+#include <forward_list>
 #include "Filesystem.h"
+#include "Filesystem.h" // intentional
 #include "Directory.h"
+#include "Directory.h" // intentional
 #include "File.h"
+#include "File.h" // intentional
 #include "Flags.h"
+#include "Flags.h" // intentional
+
+int cout = 0; // won't compile if headers don't follow convention
 
 void printLine() {
     std::cout << "--------------------------\n";
