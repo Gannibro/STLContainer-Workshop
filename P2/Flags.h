@@ -1,16 +1,20 @@
 #ifndef SENECA_FLAGS_H
 #define SENECA_FLAGS_H
 
-namespace seneca {
-
+namespace seneca
+{
     enum class FormatFlags {
-        LONG
+        LONG,
+    };
+
+    enum class NodeType {
+        DIR,
+        FILE
     };
 
     enum class OpFlags {
-        RECURSIVE
+        RECURSIVE,
     };
-
 }
 
 #endif

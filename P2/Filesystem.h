@@ -5,26 +5,29 @@
 #include "Directory.h"
 
 namespace seneca {
-    class Filesystem {
-    private:
-        Directory* m_root;
-        Directory* m_current;
 
-        void load_filesystem(const std::string& file_name);
+class Filesystem {
+private:
+    Directory* m_root;
+    Directory* m_current;
 
-    public:
-        Filesystem(const std::string& file_name, const std::string& root_name = "");
-        Filesystem(const Filesystem&) = delete;
-        Filesystem& operator=(const Filesystem&) = delete;
-        Filesystem(Filesystem&& other) noexcept;
-        Filesystem& operator=(Filesystem&& other) noexcept;
-        ~Filesystem();
+public:
+    Filesystem(const std::string& filename, const std::string& root_name = "");
+    ~Filesystem();
 
-        Filesystem& operator+=(Resource* resource);
+    // Disable copy operations
+    Filesystem(const Filesystem&) = delete;
+    Filesystem& operator=(const Filesystem&) = delete;
 
-        Directory* change_directory(const std::string& dir_name = "");
-        Directory* get_current_directory() const;
-    };
+    // Enable move operations
+    Filesystem(Filesystem&&) noexcept;
+    Filesystem& operator=(Filesystem&&) noexcept;
+
+    Filesystem& operator+=(Resource* resource);
+    Directory* change_directory(const std::string& dir_name = "");
+    Directory* get_current_directory() const;
+};
+
 }
 
-#endif
+#endif // SENECA_FILESYSTEM_H

@@ -8,41 +8,27 @@
 
 namespace seneca {
 
-    class Directory : public Resource {
-    private:
-        std::vector<Resource*> m_contents;
-        Directory* find_directory(const std::string& name);
+class Directory : public Resource {
+private:
+    std::vector<Resource*> m_contents;
 
-    public:
-        Directory(const std::string& name);
-        ~Directory();
+public:
+    Directory(const std::string& name);
+    ~Directory();
 
-        int count() const override;
-        size_t size() const override;
-        void operator+=(Resource* resource);
-        void remove(const std::string& name, const std::vector<OpFlags>& flags = {});
-        Resource* find(const std::string& name, const std::vector<OpFlags>& flags = {}) const;
-        void display(std::ostream& out, const std::vector<FormatFlags>& flags = {}) const;
+    void update_parent_path(const std::string& parent_path) override;
+    std::string name() const override;
+    int count() const override;
+    std::string path() const override;
+    size_t size() const override;
+    NodeType type() const override;
 
-        void update_parent_path(const std::string& parent_path) override {
-            m_parent_path = parent_path;
-            for (auto& resource : m_contents) {
-                resource->update_parent_path(this->path());
-            }
-        }
+    Directory& operator+=(Resource* resource);
+    void remove(const std::string& name, const std::vector<OpFlags>& flags = {});
+    Resource* find(const std::string& name, const std::vector<OpFlags>& flags = {}) const;
+    void display(std::ostream& out, const std::vector<FormatFlags>& flags = {}) const;
+};
 
-        std::string name() const override {
-            return m_name;
-        }
-
-        std::string path() const override {
-            return m_parent_path + m_name;
-        }
-
-        NodeType type() const override {
-            return NodeType::DIRECTORY;
-        }
-    };
 }
 
 #endif

@@ -1,105 +1,126 @@
 #include "Directory.h"
-#include "File.h"
-#include <stdexcept>
-#include <iostream>
-#include <iomanip>
 #include <algorithm>
+#include <stdexcept>
+#include <iomanip>
 
 namespace seneca {
 
-    Directory::Directory(const std::string& name) : Resource(name) {}
+Directory::Directory(const std::string& name) : Resource(name) {}
 
-    Directory::~Directory() {
-        for (auto& resource : m_contents) {
-            delete resource;
-        }
+Directory::~Directory() {
+    for (auto& resource : m_contents) {
+        delete resource;
     }
+}
 
-    int Directory::count() const {
-        return m_contents.size();
+void Directory::update_parent_path(const std::string& parent_path) {
+    m_parent_path = parent_path;
+    for (auto& resource : m_contents) {
+        resource->update_parent_path(path());
     }
+}
 
-    size_t Directory::size() const {
-        size_t total_size = 0;
+std::string Directory::name() const {
+    return m_name;
+}
+
+int Directory::count() const {
+    return static_cast<int>(m_contents.size());
+}
+
+std::string Directory::path() const {
+    return m_parent_path + m_name + "/";
+}
+
+size_t Directory::size() const {
+    size_t total_size = 0;
+    for (const auto& resource : m_contents) {
+        total_size += resource->size();
+    }
+    return total_size;
+}
+
+NodeType Directory::type() const {
+    return NodeType::DIR;
+}
+
+Directory& Directory::operator+=(Resource* resource) {
+    auto it = std::find_if(m_contents.begin(), m_contents.end(),
+        [&](const Resource* r) { return r->name() == resource->name(); });
+    
+    if (it != m_contents.end()) {
+        throw std::runtime_error("Resource with the same name already exists in the directory");
+    }
+    
+    m_contents.push_back(resource);
+    resource->update_parent_path(this->path());
+    return *this;
+}
+
+void Directory::remove(const std::string& name, const std::vector<OpFlags>& flags) {
+    auto it = std::find_if(m_contents.begin(), m_contents.end(),
+        [&](const Resource* r) { return r->name() == name; });
+    
+    if (it == m_contents.end()) {
+        throw std::runtime_error(name + " does not exist in " + this->name());
+    }
+    
+    if ((*it)->type() == NodeType::DIR && 
+        std::find(flags.begin(), flags.end(), OpFlags::RECURSIVE) == flags.end()) {
+        throw std::invalid_argument(name + " is a directory. Pass the recursive flag to delete directories.");
+    }
+    
+    delete *it;
+    m_contents.erase(it);
+}
+
+Resource* Directory::find(const std::string& name, const std::vector<OpFlags>& flags) const {
+    auto it = std::find_if(m_contents.begin(), m_contents.end(),
+        [&](const Resource* r) { return r->name() == name; });
+    
+    if (it != m_contents.end()) {
+        return *it;
+    }
+    
+    if (std::find(flags.begin(), flags.end(), OpFlags::RECURSIVE) != flags.end()) {
         for (const auto& resource : m_contents) {
-            total_size += resource->size();
-        }
-        return total_size;
-    }
-
-    Directory* Directory::find_directory(const std::string& name) {
-        for (auto& resource : m_contents) {
-            if (resource->name() == name) {
-                return dynamic_cast<Directory*>(resource);
-            }
-        }
-        return nullptr;
-    }
-
-    Resource* Directory::find(const std::string& name, const std::vector<OpFlags>& flags) const {
-        for (const auto& resource : m_contents) {
-            if (resource->name() == name) {
-                return resource;
-            }
-
-            if (std::find(flags.begin(), flags.end(), OpFlags::RECURSIVE) != flags.end()) {
-                Directory* dir = dynamic_cast<Directory*>(resource);
-                if (dir) {
-                    Resource* found = dir->find(name, flags);
-                    if (found) {
-                        return found;
-                    }
+            if (resource->type() == NodeType::DIR) {
+                Resource* found = dynamic_cast<Directory*>(resource)->find(name, flags);
+                if (found) {
+                    return found;
                 }
             }
         }
-        return nullptr;
     }
+    
+    return nullptr;
+}
 
-    void Directory::operator+=(Resource* resource) {
-        for (auto& res : m_contents) {
-            if (res->name() == resource->name()) {
-                throw std::runtime_error(resource->name() + " already exists in the directory.");
-            }
-        }
-        m_contents.push_back(resource);
-        resource->update_parent_path(this->path());
-    }
-
-    void Directory::remove(const std::string& name, const std::vector<OpFlags>& flags) {
-        auto it = std::find_if(m_contents.begin(), m_contents.end(),
-            [&name](Resource* resource) { return resource->name() == name; });
-
-        if (it != m_contents.end()) {
-            Directory* dir = dynamic_cast<Directory*>(*it);
-            if (dir && std::find(flags.begin(), flags.end(), OpFlags::RECURSIVE) == flags.end()) {
-                throw std::invalid_argument(name + " is a directory. Pass the recursive flag to delete directories.");
-            }
-
-            delete *it;
-            m_contents.erase(it);
+void Directory::display(std::ostream& os, const std::vector<FormatFlags>& flags) const {
+    os << "Total size: " << size() << " bytes\n";
+    
+    for (const auto& resource : m_contents) {
+        os << (resource->type() == NodeType::DIR ? "D" : "F") << " | "
+           << std::left << std::setw(15);
+        
+        if (resource->type() == NodeType::DIR) {
+            os << (resource->name() + "/");
         } else {
-            throw std::string(name + " does not exist in " + this->name());
+            os << resource->name();
         }
-    }
-
-    void Directory::display(std::ostream& out, const std::vector<FormatFlags>& flags) const {
-        out << "Total size: " << this->size() << " bytes\n";
-        for (const auto& resource : m_contents) {
-            if (dynamic_cast<const Directory*>(resource)) {
-                out << "D | " << std::left << std::setw(15) << resource->name();
+        
+        os << " |";
+        
+        if (std::find(flags.begin(), flags.end(), FormatFlags::LONG) != flags.end()) {
+            if (resource->type() == NodeType::DIR) {
+                os << std::right << std::setw(3) << resource->count() << " |";
             } else {
-                out << "F | " << std::left << std::setw(15) << resource->name();
+                os << "    |"; // Four spaces for files
             }
-
-            if (std::find(flags.begin(), flags.end(), FormatFlags::LONG) != flags.end()) {
-                if (dynamic_cast<const Directory*>(resource)) {
-                    out << " | " << std::right << std::setw(2) << resource->count() << " | "
-                        << std::right << std::setw(10) << resource->size() << " bytes |";
-                } else {
-                    out << " | " << std::right << std::setw(10) << resource->size() << " bytes |";
-                }
-            }
-            out << '\n';
+            os << std::right << std::setw(10) << resource->size() << " bytes |";
         }
+        os << '\n';
     }
+}
+
 }
