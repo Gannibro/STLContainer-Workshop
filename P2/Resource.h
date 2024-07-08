@@ -12,7 +12,8 @@ protected:
     std::string m_parent_path = "/";
 
 public:
-    Resource(const std::string& name) : m_name(name) {}
+    Resource() = default;  // Add a default constructor
+    Resource(const std::string& name);  // Constructor taking a string
     virtual ~Resource() = default;
 
     virtual void update_parent_path(const std::string&) = 0;
@@ -22,6 +23,9 @@ public:
     virtual size_t size() const = 0;
     virtual NodeType type() const = 0;
 };
+
+// Inline implementation of the constructor
+inline Resource::Resource(const std::string& name) : m_name(name) {}
 
 }
 
