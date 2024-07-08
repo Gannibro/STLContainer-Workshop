@@ -1,0 +1,38 @@
+On completing this workshop on file system simulation, I've gained a deeper understanding of several important C++ concepts and their practical applications.
+
+1. Dynamic Memory Management:
+   I needed to deallocate the dynamically allocated memory in the vector of resources to prevent memory leaks. In the Directory destructor, I implemented:
+
+   Directory::~Directory() {
+       for (auto& resource : m_contents) {
+           delete resource;
+       }
+   }
+
+   This is crucial because each Resource* in m_contents points to heap-allocated memory. If not deleted, these would persist after the Directory object is destroyed, causing memory leaks.
+
+2. Dynamic Casting:
+   To call specific functions for Directory objects stored as Resource*, I had to use dynamic_cast. For example:
+
+   Directory* dir = dynamic_cast<Directory*>(resource);
+   if (dir) {
+       // Call Directory-specific functions
+   }
+
+   This was necessary because Resource* could point to either File or Directory objects. Dynamic casting allows safe downcasting, enabling access to derived class methods when appropriate.
+
+3. Using std::vector<seneca::Resource*> vs std::vector<seneca::Resource>:
+   Using std::vector<seneca::Resource*> was necessary for this implementation. We couldn't use std::vector<seneca::Resource> because:
+
+   a) Resource is an abstract base class (it has pure virtual functions), so we can't create instances of it directly.
+   b) Storing derived objects (File, Directory) in a vector of base class objects would lead to object slicing, losing derived class information.
+   c) Polymorphism requires pointers or references. Using pointers allows for runtime polymorphism, enabling us to store and manipulate both File and Directory objects in the same container.
+
+   For example, in the Directory class:
+   std::vector<Resource*> m_contents;
+   This allows m_contents to hold both File and Directory objects, preserving their full functionality.
+
+4. Challenges and Solutions:
+   One difficulty I encountered was ensuring proper memory management, especially in move operations and when removing resources. I solved this by carefully implementing the Rule of Five (destructor, copy constructor, copy assignment, move constructor, move assignment) for the Directory class, ensuring that resources were properly managed in all scenarios.
+
+This workshop deepened my understanding of polymorphism, dynamic memory management, and the importance of proper resource handling in C++. It also highlighted the practical applications of these concepts in simulating complex systems like a file system.
